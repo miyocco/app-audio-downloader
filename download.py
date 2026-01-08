@@ -3,13 +3,26 @@ import yt_dlp
 import os
 from pathlib import Path
 import getpass
+from dotenv import load_dotenv
+
+# 環境変数を読み込む
+load_dotenv()
 
 # デスクトップを保存先に設定
 DOWNLOAD_DIR = Path.home() / "Desktop"
 
+def get_env_credentials():
+    """環境変数から認証情報を取得"""
+    email = os.getenv("RADIKO_MAIL")
+    password = os.getenv("RADIKO_PASSWORD")
+    if email and password:
+        return email, password
+    return None
+
 def download_radiko(url, output_template=None, cookie_file=None, credentials=None):
+    # ... (変更なし) ...
     """
-    Downloads Radiko audio using yt-dlp. 
+    Downloads Radiko audio using yt-dlp.
     
     Args:
         url (str): The Radiko URL.
@@ -63,17 +76,36 @@ def interactive_mode():
         print("URLが入力されませんでした。終了します。")
         return
 
-    print("\n--- 認証設定 (プレミアム会員向け) ---")
-    print("1: メールアドレスとパスワードを入力 (推奨)")
-    print("2: クッキーファイル (cookies.txt) を使用")
-    print("3: 認証なし (無料会員)")
-    
-    auth_choice = input("選択 [3]: ").strip()
-    
+    env_creds = get_env_credentials()
     cookie_file_path = None
     credentials = None
 
+    print("\n--- 認証設定 (プレミアム会員向け) ---")
+    
+    default_choice = '3'
+    
+    if env_creds:
+        print(f"1: 環境変数の設定を使用 ({env_creds[0]}) [推奨]")
+        default_choice = '1'
+    else:
+        print("1: (環境変数の設定なし)")
+
+    print("2: メールアドレスとパスワードを手動入力")
+    print("3: クッキーファイル (cookies.txt) を使用")
+    print("4: 認証なし (無料会員)")
+    
+    auth_choice = input(f"選択 [{default_choice}]: ").strip()
+    if not auth_choice:
+        auth_choice = default_choice
+    
     if auth_choice == '1':
+        if env_creds:
+            credentials = env_creds
+            print("環境変数の認証情報を使用します。")
+        else:
+            print("環境変数が設定されていません。")
+            
+    elif auth_choice == '2':
         print("\nRadikoプレミアムのログイン情報を入力してください。")
         email = input("メールアドレス: ").strip()
         password = getpass.getpass("パスワード: ")
@@ -82,11 +114,9 @@ def interactive_mode():
         else:
             print("情報が不足しています。認証なしで続行します。")
             
-    elif auth_choice == '2':
+    elif auth_choice == '3':
         print("\nNetscape形式のクッキーファイル（cookies.txt）のパスを入力してください。")
-        print("（ブラウザ拡張機能 'Get cookies.txt' 等でエクスポートできます）")
         path_input = input("ファイルパス: ").strip()
-        # パスの引用符などを除去
         path_input = path_input.replace('"', '').replace("'", "")
         if os.path.exists(path_input):
             cookie_file_path = path_input
@@ -102,15 +132,17 @@ def interactive_mode():
         print("-" * 40)
 
 if __name__ == "__main__":
-    # 引数がある場合は従来通り処理
+    # 引数がある場合も環境変数をチェック
+    env_creds = get_env_credentials()
+    
     if len(sys.argv) > 1:
         target_url = sys.argv[1]
         out_tmpl = sys.argv[2] if len(sys.argv) > 2 else None
         print(f"Downloading from: {target_url}")
         print(f"Destination: {DOWNLOAD_DIR}")
         
-        # 引数モードでのクッキー利用は簡易的に未対応
-        download_radiko(target_url, out_tmpl)
+        # 環境変数が設定されていれば自動適用
+        download_radiko(target_url, out_tmpl, credentials=env_creds)
     else:
         # 引数がない場合は対話モード
         interactive_mode()
