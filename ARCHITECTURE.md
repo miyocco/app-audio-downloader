@@ -46,10 +46,10 @@ def interactive_mode():
     # クッキー使用有無を確認
     # 各URLに対して download_radiko を呼び出し
 
-def download_radiko(url, output_template=None, use_browser_cookies=False):
+def download_radiko(url, output_template=None, cookie_file=None, credentials=None):
     """yt-dlpを使用したダウンロード実行"""
     # yt_dlp.YoutubeDL のオプション設定
-    # ブラウザクッキーの設定（Edge）
+    # 認証情報（クッキーファイルまたはメール/パスワード）の設定
     # ダウンロード実行とエラーハンドリング
 
 if __name__ == "__main__":
@@ -61,7 +61,11 @@ if __name__ == "__main__":
 ### 3.1 ダウンロードフロー
 
 1.  **入力**: ユーザーがRadikoのURL（`https://radiko.jp/#!/ts/...`）を入力。
-2.  **設定**: クッキー使用の有無を選択（プレミアム会員向け）。
+2.  **認証**: 
+    - 環境変数（`.env`）からの自動読み込み
+    - 手動入力
+    - クッキーファイル（`cookies.txt`）の利用
+    のいずれかを選択・適用。
 3.  **初期化**: `yt_dlp.YoutubeDL` インスタンスを生成。
 4.  **解析**: `yt-dlp-rajiko` プラグインがURLを解析し、認証トークンを取得。
 5.  **取得**: ストリームデータ（m3u8）を取得し、セグメントをダウンロード。
