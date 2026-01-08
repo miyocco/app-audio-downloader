@@ -37,6 +37,7 @@ ffmpeg -version
 スクリプトを実行すると、URLの入力を求められます。複数のURLをまとめて入力できます。
 
 ```bash
+cd cursor/miyocco/app-audio-downloader
 python3 download.py
 ```
 
@@ -58,6 +59,7 @@ Edgeブラウザのログイン情報（クッキー）を使用しますか？ 
 ### コマンドライン引数（単一ダウンロード）
 
 ```bash
+cd cursor/miyocco/app-audio-downloader
 python3 download.py <URL> [output_filename]
 ```
 
