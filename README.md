@@ -37,12 +37,12 @@ ffmpeg -version
 スクリプトを実行すると、URLの入力を求められます。複数のURLをまとめて入力できます。
 
 ```bash
-cd cursor/miyocco/app-audio-downloader
 python3 download.py
 ```
 
 実行例:
 ```text
+保存先: /Users/miyoshi-koichi/Desktop
 RadikoのURLを入力してください。
 （複数ある場合は改行して入力してください。入力完了時は何も入力せずにEnterを押してください）
 > https://radiko.jp/#!/ts/LFR/20260102010000
@@ -52,6 +52,8 @@ Edgeブラウザのログイン情報（クッキー）を使用しますか？ 
 
 2 件のダウンロードを開始します...
 ```
+
+**保存先**: デフォルトで **デスクトップ** (`~/Desktop`) に保存されます。
 
 ### コマンドライン引数（単一ダウンロード）
 
