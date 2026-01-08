@@ -2,51 +2,20 @@ import sys
 import yt_dlp
 import os
 from pathlib import Path
-import tempfile
-import subprocess
+import getpass
 
 # デスクトップを保存先に設定
 DOWNLOAD_DIR = Path.home() / "Desktop"
 
-def extract_cookies_to_file(browser_name, output_path):
+def download_radiko(url, output_template=None, cookie_file=None, credentials=None):
     """
-    指定されたブラウザからクッキーを抽出し、ファイルに保存する。
-    yt-dlpのCLI機能を使用して確実にNetscape形式で書き出す。
-    """
-    print(f"[{browser_name}] からクッキーを抽出しています...")
-    
-    # yt-dlpコマンドを構築
-    # python -m yt_dlp --cookies-from-browser <browser> --cookies <output> --skip-download <url>
-    cmd = [
-        sys.executable, "-m", "yt_dlp",
-        "--cookies-from-browser", browser_name,
-        "--cookies", output_path,
-        "--skip-download",
-        "--quiet",
-        "https://radiko.jp"
-    ]
-    
-    try:
-        # 実行
-        subprocess.run(cmd, check=True)
-        print(f"クッキーを抽出しました: {output_path}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"クッキーの抽出に失敗しました (Exit Code: {e.returncode})")
-        return False
-    except Exception as e:
-        print(f"予期せぬエラーが発生しました: {e}")
-        return False
-
-def download_radiko(url, output_template=None, cookie_file=None):
-    """
-    Downloads Radiko audio using yt-dlp.
+    Downloads Radiko audio using yt-dlp. 
     
     Args:
         url (str): The Radiko URL.
-        output_template (str, optional): Output filename template. 
-                                         Defaults to 'Desktop/%(title)s [%(id)s].%(ext)s'.
-        cookie_file (str, optional): Path to the Netscape formatted cookie file.
+        output_template (str, optional): Output filename.
+        cookie_file (str, optional): Path to cookie file.
+        credentials (tuple, optional): (username, password) for Radiko premium.
     """
     
     # 出力パスの設定（デフォルトはデスクトップ）
@@ -60,15 +29,19 @@ def download_radiko(url, output_template=None, cookie_file=None):
         'format': 'bestaudio/best',
     }
     
+    # 認証設定
     if cookie_file:
         ydl_opts['cookiefile'] = cookie_file
+    
+    if credentials:
+        ydl_opts['username'] = credentials[0]
+        ydl_opts['password'] = credentials[1]
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
     except Exception as e:
         print(f"Error downloading {url}: {e}")
-        # 対話モードで1つ失敗しても他を続行できるようにsys.exitは削除または制御
         pass
 
 def interactive_mode():
@@ -90,45 +63,43 @@ def interactive_mode():
         print("URLが入力されませんでした。終了します。")
         return
 
-    # ブラウザのクッキーを使用するか確認（プレミアム会員向け）
-    use_cookies = input("Edgeブラウザのログイン情報（クッキー）を使用しますか？ (y/n) [n]: ").strip().lower() == 'y'
-
+    print("\n--- 認証設定 (プレミアム会員向け) ---")
+    print("1: メールアドレスとパスワードを入力 (推奨)")
+    print("2: クッキーファイル (cookies.txt) を使用")
+    print("3: 認証なし (無料会員)")
+    
+    auth_choice = input("選択 [3]: ").strip()
+    
     cookie_file_path = None
-    if use_cookies:
-        # 一時ファイルを作成（パスを取得するため）
-        tf = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
-        tf.close()
-        cookie_file_path = tf.name
-        
-        # 【重要】yt-dlpはファイルが存在すると「読み込み」を試みて空ファイルエラーになるため、
-        # パスだけ確保してファイル自体は削除しておく。
-        if os.path.exists(cookie_file_path):
-            os.remove(cookie_file_path)
+    credentials = None
 
-        print("※ 注意: Edgeブラウザが開いていると失敗する場合があります。閉じてから実行してください。")
-        
-        if not extract_cookies_to_file('edge', cookie_file_path):
-            print("警告: クッキーの抽出に失敗しました。ログインなしで続行します。")
-            # 失敗した場合もゴミが残らないよう確認
-            if os.path.exists(cookie_file_path):
-                os.remove(cookie_file_path)
-            cookie_file_path = None
+    if auth_choice == '1':
+        print("\nRadikoプレミアムのログイン情報を入力してください。")
+        email = input("メールアドレス: ").strip()
+        password = getpass.getpass("パスワード: ")
+        if email and password:
+            credentials = (email, password)
+        else:
+            print("情報が不足しています。認証なしで続行します。")
+            
+    elif auth_choice == '2':
+        print("\nNetscape形式のクッキーファイル（cookies.txt）のパスを入力してください。")
+        print("（ブラウザ拡張機能 'Get cookies.txt' 等でエクスポートできます）")
+        path_input = input("ファイルパス: ").strip()
+        # パスの引用符などを除去
+        path_input = path_input.replace('"', '').replace("'", "")
+        if os.path.exists(path_input):
+            cookie_file_path = path_input
+        else:
+            print(f"ファイルが見つかりません: {path_input}")
+            print("認証なしで続行します。")
 
     print(f"\n{len(urls)} 件のダウンロードを開始します...\n")
     
-    try:
-        for url in urls:
-            print(f"Processing: {url}")
-            download_radiko(url, cookie_file=cookie_file_path)
-            print("-" * 40)
-    finally:
-        # クリーンアップ
-        if cookie_file_path and os.path.exists(cookie_file_path):
-            try:
-                os.remove(cookie_file_path)
-                # print("一時クッキーファイルを削除しました。")
-            except:
-                pass
+    for url in urls:
+        print(f"Processing: {url}")
+        download_radiko(url, cookie_file=cookie_file_path, credentials=credentials)
+        print("-" * 40)
 
 if __name__ == "__main__":
     # 引数がある場合は従来通り処理
@@ -138,7 +109,7 @@ if __name__ == "__main__":
         print(f"Downloading from: {target_url}")
         print(f"Destination: {DOWNLOAD_DIR}")
         
-        # 引数モードでのクッキー利用は簡易的に未対応（必要ならオプション解析を追加）
+        # 引数モードでのクッキー利用は簡易的に未対応
         download_radiko(target_url, out_tmpl)
     else:
         # 引数がない場合は対話モード
