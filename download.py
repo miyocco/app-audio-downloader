@@ -95,14 +95,23 @@ def interactive_mode():
 
     cookie_file_path = None
     if use_cookies:
-        # 一時ファイルを作成
+        # 一時ファイルを作成（パスを取得するため）
         tf = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         tf.close()
         cookie_file_path = tf.name
         
+        # 【重要】yt-dlpはファイルが存在すると「読み込み」を試みて空ファイルエラーになるため、
+        # パスだけ確保してファイル自体は削除しておく。
+        if os.path.exists(cookie_file_path):
+            os.remove(cookie_file_path)
+
+        print("※ 注意: Edgeブラウザが開いていると失敗する場合があります。閉じてから実行してください。")
+        
         if not extract_cookies_to_file('edge', cookie_file_path):
             print("警告: クッキーの抽出に失敗しました。ログインなしで続行します。")
-            os.remove(cookie_file_path)
+            # 失敗した場合もゴミが残らないよう確認
+            if os.path.exists(cookie_file_path):
+                os.remove(cookie_file_path)
             cookie_file_path = None
 
     print(f"\n{len(urls)} 件のダウンロードを開始します...\n")
