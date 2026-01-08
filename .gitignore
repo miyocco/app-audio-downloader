@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment Variables (Secrets)
+# .env はパスワードを含むため絶対にコミットしない
+.env
+.env.local
+.env.*
+!.env.example
+
+# Authentication / Secrets
+# クッキーファイルも個人情報を含むため除外
+cookies.txt
+netscape_cookies.txt
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Output Files (Downloaded Media)
+# デスクトップ保存がデフォルトですが、プロジェクト内に保存された場合用
+*.m4a
+*.mp3
+*.aac
+*.mp4
+*.ts
+*.m3u8
