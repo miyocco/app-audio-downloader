@@ -13,7 +13,7 @@ Radikoのタイムフリー音源をダウンロードするためのCLIツー�
 - 🔐 **プレミアム対応**: Edgeブラウザのクッキーを利用してエリアフリー/タイムフリー30もダウンロード可能
 - 🛠 **高信頼性**: `yt-dlp` エンジンを採用し、安定したダウンロードを実現
 
-## インストール
+## セットアップ
 
 ### 1. 依存パッケージのインストール
 
@@ -22,7 +22,22 @@ cd /Users/miyoshi-koichi/cursor/miyocco/app-audio-downloader
 pip3 install -r requirements.txt
 ```
 
-### 2. ffmpegの確認
+### 2. 環境変数の設定（推奨）
+
+Radikoプレミアム会員の方は、プロジェクトルートに `.env` ファイルを作成し、ログイン情報を設定することで、毎回入力する手間を省けます。
+
+```bash
+cp .env.example .env
+nano .env  # またはお好みのエディタで編集
+```
+
+`.env` の内容:
+```ini
+RADIKO_MAIL=your_email@example.com
+RADIKO_PASSWORD=your_password
+```
+
+### 3. ffmpegの確認
 
 `ffmpeg` がインストールされている必要があります。
 
