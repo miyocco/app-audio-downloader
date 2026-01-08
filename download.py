@@ -3,6 +3,7 @@ import yt_dlp
 import os
 from pathlib import Path
 import tempfile
+import subprocess
 
 # デスクトップを保存先に設定
 DOWNLOAD_DIR = Path.home() / "Desktop"
@@ -10,23 +11,31 @@ DOWNLOAD_DIR = Path.home() / "Desktop"
 def extract_cookies_to_file(browser_name, output_path):
     """
     指定されたブラウザからクッキーを抽出し、ファイルに保存する。
+    yt-dlpのCLI機能を使用して確実にNetscape形式で書き出す。
     """
     print(f"[{browser_name}] からクッキーを抽出しています...")
-    opts = {
-        'cookiesfrombrowser': (browser_name, None, None, None),
-        'cookiefile': str(output_path),
-        'skip_download': True,
-        'quiet': True,
-    }
+    
+    # yt-dlpコマンドを構築
+    # python -m yt_dlp --cookies-from-browser <browser> --cookies <output> --skip-download <url>
+    cmd = [
+        sys.executable, "-m", "yt_dlp",
+        "--cookies-from-browser", browser_name,
+        "--cookies", output_path,
+        "--skip-download",
+        "--quiet",
+        "https://radiko.jp"
+    ]
     
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            # Radikoのトップページにアクセスしてクッキーを確保
-            ydl.extract_info("https://radiko.jp", download=False)
+        # 実行
+        subprocess.run(cmd, check=True)
         print(f"クッキーを抽出しました: {output_path}")
         return True
+    except subprocess.CalledProcessError as e:
+        print(f"クッキーの抽出に失敗しました (Exit Code: {e.returncode})")
+        return False
     except Exception as e:
-        print(f"クッキーの抽出に失敗しました: {e}")
+        print(f"予期せぬエラーが発生しました: {e}")
         return False
 
 def download_radiko(url, output_template=None, cookie_file=None):
@@ -86,8 +95,7 @@ def interactive_mode():
 
     cookie_file_path = None
     if use_cookies:
-        # 一時ファイルを作成してクッキーを保存
-        # delete=Falseにして、使用後に手動で削除する（Windows等でのファイルロック回避のため念のため）
+        # 一時ファイルを作成
         tf = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         tf.close()
         cookie_file_path = tf.name
@@ -122,8 +130,6 @@ if __name__ == "__main__":
         print(f"Destination: {DOWNLOAD_DIR}")
         
         # 引数モードでのクッキー利用は簡易的に未対応（必要ならオプション解析を追加）
-        # ただし、main.pyを直接叩くユースケースは減っているため、基本はデフォルトで。
-        # もし必要ならインタラクティブモードを推奨。
         download_radiko(target_url, out_tmpl)
     else:
         # 引数がない場合は対話モード
